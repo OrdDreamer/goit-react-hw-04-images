@@ -1,108 +1,93 @@
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import { getImages } from '../services/gallery-api';
-import styles from "./app.module.css"
-import Searchbar from './Searchbar/Searchbar';
+import styles from './app.module.css';
+import { Searchbar } from './Searchbar/Searchbar';
 import Loader from './Loader/Loader';
 import Button from './Button/Button';
 import ImageGallery from './ImageGallery/ImageGallery';
-import Modal from './Modal/Modal';
+import { Modal } from './Modal/Modal';
 
-export default class App extends Component {
+export const App = () => {
 
-  state = {
-    searchQuery: "",
-    page: 1,
-    items: [],
-    hitsQuantity: null,
-    isProcessing: false,
-    showModal: false,
-    openImageURL: "",
-    error: null,
-  };
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [items, setItems] = useState([]);
+  const [hitsQuantity, setHitsQuantity] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [openImageURL, setOpenImageURL] = useState('');
+  const [error, setError] = useState(null);
 
-  componentDidUpdate(prevProps, prevState) {
-    const { searchQuery, page } = this.state;
-    if (prevState.searchQuery !== searchQuery || prevState.page !== page) {
-      this.searchImages();
+  useEffect(() => {
+    if (searchQuery) {
+      const searchImages = async () => {
+        try {
+          setIsProcessing(true);
+          const data = await getImages(searchQuery, page);
+
+          if (data.hits && data.hits.length) {
+            setItems((prevItems) => [...prevItems, ...data.hits]);
+          } else {
+            setError('Images not found');
+          }
+
+          setHitsQuantity(data.totalHits);
+        } catch (error) {
+          setError(error.message);
+        } finally {
+          setIsProcessing(false);
+        }
+      };
+      searchImages();
     }
-  }
+  }, [searchQuery, page]);
 
-  async searchImages() {
-    try {
-      this.setState({ isProcessing: true });
-
-      const { searchQuery, page } = this.state;
-
-      const data = await getImages(searchQuery, page);
-      if (data.hits && data.hits.length) {
-        this.setState(({ items }) => ({ items: [...items, ...data.hits] }));
-      } else {
-        this.setState({ error: 'Images not found' })
-      }
-      this.setState({ hitsQuantity: data.totalHits });
-
-    } catch (error) {
-      this.setState({ error: error.message });
-    } finally {
-      this.setState({ isProcessing: false });
-    }
-  }
-
-  onChangeSearchQuery = (searchQuery) => {
-    this.setState({
-      searchQuery,
-      items: [],
-      page: 1,
-      error: null,
-      hitsQuantity: null,
-    });
+  const onChangeSearchQuery = (searchQuery) => {
+    setSearchQuery(searchQuery);
+    setItems([]);
+    setHitsQuantity(null);
+    setPage(1);
+    setError(null);
   };
 
-  loadMore = () => {
-    this.setState(({ page }) => ({ page: page + 1 }));
+  const loadMore = () => {
+    setPage((prevPage) => prevPage + 1);
   };
 
-  showImage = (imageURL) => {
-    this.setState({ showModal: true, openImageURL: imageURL });
+  const showImage = (imageURL) => {
+    setShowModal(true);
+    setOpenImageURL(imageURL);
   };
 
 
-  closeModal = () => {
-    this.setState({
-      showModal: false,
-      openImageURL: null,
-    });
+  const closeModal = () => {
+    setShowModal(false);
+    setOpenImageURL(null);
   };
 
-  render() {
-    const { items, isProcessing, error, showModal, openImageURL, hitsQuantity } =
-      this.state;
-    const { showImage, closeModal } = this;
-
-    return (
-      <div style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        color: '#010101',
-        backgroundColor: "rgb(231, 236, 242)",
-      }}>
-        <Searchbar onChangeSearchQuery={this.onChangeSearchQuery} />
-        {error && <p className={styles.errorMessage}>{error}</p>}
-        {items.length !== 0 && (
-          <ImageGallery items={items} showImage={showImage} />
-        )}
-        {(hitsQuantity > items.length) && !isProcessing && (
-          <Button title="Load more..." onClick={this.loadMore} />
-        )}
-        {showModal && (
-          <Modal close={closeModal}>
-            <img src={openImageURL} alt="" />
-          </Modal>
-        )}
-        <Loader visible={isProcessing} />
-      </div>
-    );
-  }
-}
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      color: '#010101',
+      backgroundColor: 'rgb(231, 236, 242)',
+    }}>
+      <Searchbar onChangeSearchQuery={onChangeSearchQuery} />
+      {error && <p className={styles.errorMessage}>{error}</p>}
+      {items.length !== 0 && (
+        <ImageGallery items={items} showImage={showImage} />
+      )}
+      {(hitsQuantity > items.length) && !isProcessing && (
+        <Button title='Load more...' onClick={loadMore} />
+      )}
+      {showModal && (
+        <Modal close={closeModal}>
+          <img src={openImageURL} alt='' />
+        </Modal>
+      )}
+      <Loader visible={isProcessing} />
+    </div>
+  );
+};
