@@ -1,0 +1,21 @@
+.item {
+  border-radius: 2px;
+  box-shadow: 0 3px 6px hsl(212deg 9% 59% / 15%);
+  background-color: #fff;
+  width: 320px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.itemImage {
+  display: block;
+  width: 100%;
+  object-fit: cover;
+  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.itemImage:hover {
+  transform: scale(1.03);
+  cursor: zoom-in;
+}
